@@ -1,0 +1,35 @@
+[package]
+name = "pc-monitor"
+version = "0.1.0"
+authors = ["alemidev <me@alemi.dev>"]
+edition = "2021"
+
+[[bin]]
+name = "pc-monitor"
+test = false
+bench = false
+
+[dependencies]
+panic-halt = "0.2.0"
+ufmt = "0.1.0"
+nb = "1"
+embedded-hal = "0.2.3"
+embedded-msgpack = "0.2"
+
+[dependencies.arduino-hal]
+git = "https://github.com/rahix/avr-hal"
+rev = "1aacefb335517f85d0de858231e11055d9768cdf"
+features = ["arduino-nano"]
+
+# Configure the build for minimal size - AVRs have very little program memory
+[profile.dev]
+panic = "abort"
+lto = true
+opt-level = "s"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "s"
