@@ -23,6 +23,8 @@ fn main() -> ! {
 	let timer2 = Timer2Pwm::new(dp.TC2, Prescaler::Direct);
 	let pins = arduino_hal::pins!(dp);
 	let mut led_load = pins.d6.into_output();
+	let mut led_rx = pins.d5.into_output(); // green
+	let mut led_tx = pins.d4.into_output(); // red
 	let button = pins.d2.into_pull_up_input();
 	let mut cpu_leds = FourLedDisplay::new(
 		pins.d3.into_output().into_pwm(&timer2),
@@ -36,6 +38,8 @@ fn main() -> ! {
 	let mut serial = arduino_hal::default_serial!(dp, pins, 57600);
 
 	led_load.set_high();
+	led_rx.set_high();
+	led_tx.set_high();
 	
 	// prepare display
 	let mut display: GraphicsMode<_> = Builder::new().with_size(sh1106::prelude::DisplaySize::Display128x64).connect_i2c(i2c).into();
@@ -58,6 +62,8 @@ fn main() -> ! {
 	cpu_leds.set(4, 255);
 
 	led_load.set_low();
+	led_tx.set_low();
+	led_rx.set_low();
 
 	let mut pkt_builder = PacketBuilder::new();
 
@@ -81,6 +87,12 @@ fn main() -> ! {
 						PacketId::SetLedsPacket => {
 							if let Some(payload) = pkt.payload && payload.len() == 4 {
 								cpu_leds.set_many(payload[0], payload[1], payload[2], payload[3]);
+							}
+						},
+						PacketId::NetStatePacket => {
+							if let Some(payload) = pkt.payload && payload.len() == 2 {
+								if payload[0] == 0 { led_tx.set_low() } else { led_tx.set_high() };
+								if payload[1] == 0 { led_rx.set_low() } else { led_rx.set_high() };
 							}
 						},
 						_ => {}, // TODO log it?

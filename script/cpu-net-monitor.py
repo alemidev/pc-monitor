@@ -13,9 +13,14 @@ def cpu_load_serial_driver(device:str, retry_interval:float=5.0):
 			avg_usage_to_serial(port)
 		except serial.SerialException as e:
 			print(f"[!] Could not connect to device: {str(e)}", file=sys.stderr)
+		else:
+			port.close()
 		sleep(retry_interval)
 
 def avg_usage_to_serial(port:serial.Serial):
+	net = psutil.net_io_counters()
+	net_tx = net.bytes_sent
+	net_rx = net.bytes_recv
 	port.write(struct.pack("BB", 0, 0))
 	port.flush()
 	while True:
@@ -27,6 +32,15 @@ def avg_usage_to_serial(port:serial.Serial):
 		except serial.SerialException as e:
 			print(f"[!] Failed writing payload to device: {str(e)}", file=sys.stderr)
 			break
+		net = psutil.net_io_counters()
+		try:
+			port.write(struct.pack("BBBB", 2, 2, int(net.bytes_sent > net_tx), int(net.bytes_recv > net_rx)))
+			port.flush()
+		except serial.SerialException as e:
+			print(f"[!] Failed writing payload to device: {str(e)}", file=sys.stderr)
+			break
+		net_rx = net.bytes_recv
+		net_tx = net.bytes_sent
 
 
 if __name__ == "__main__":
