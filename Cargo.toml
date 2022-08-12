@@ -14,7 +14,7 @@ panic-halt = "0.2.0"
 ufmt = "0.1.0"
 nb = "1"
 embedded-hal = "0.2.3"
-sh1106 = "0.4"
+ssd1306 = "0.7"
 embedded-graphics = "0.7"
 
 [dependencies.arduino-hal]
