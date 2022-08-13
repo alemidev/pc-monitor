@@ -63,6 +63,7 @@ fn main() -> ! {
 			.build(),
 		text_style: MonoTextStyle::new(&FONT_4X6, BinaryColor::On),
 		bar_style: PrimitiveStyleBuilder::new()
+			.stroke_width(1)
 			.stroke_color(BinaryColor::On)
 			.fill_color(BinaryColor::On)
 			.build(),
@@ -94,12 +95,6 @@ fn main() -> ! {
 	let mut pkt_builder = PacketBuilder::new();
 
 	// TODO put these in a struct
-	let mut cpu1 : u8 = 0;
-	let mut cpu2 : u8 = 0;
-	let mut cpu3 : u8 = 0;
-	let mut cpu4 : u8 = 0;
-	let mut tx : u8 = 0;
-	let mut rx : u8 = 0;
 
 	arduino_hal::delay_ms(25);
 	cpu_leds.set_all(0);
@@ -121,21 +116,22 @@ fn main() -> ! {
 						PacketId::SetLedsPacket => {
 							if let Some(payload) = pkt.payload && payload.len() == 4 {
 								cpu_leds.set_many(payload[0], payload[1], payload[2], payload[3]);
-								if payload[0] != cpu1 { draw_cpu_bar(&mut display, 1, payload[0], &style); }
-								if payload[1] != cpu2 { draw_cpu_bar(&mut display, 2, payload[1], &style); }
-								if payload[2] != cpu3 { draw_cpu_bar(&mut display, 3, payload[2], &style); }
-								if payload[3] != cpu4 { draw_cpu_bar(&mut display, 4, payload[3], &style); }
-								cpu1 = payload[0]; cpu2 = payload[1]; cpu3 = payload[2]; cpu4 = payload[3];
-								display.flush().unwrap();
 							}
 						},
 						PacketId::NetStatePacket => {
 							if let Some(payload) = pkt.payload && payload.len() == 2 {
 								if payload[0] == 0 { led_tx.set_low() } else { led_tx.set_high() };
 								if payload[1] == 0 { led_rx.set_low() } else { led_rx.set_high() };
-								if payload[0] != tx { draw_network_bar(&mut display, NetDirection::TX, payload[0], &style) }
-								if payload[1] != rx { draw_network_bar(&mut display, NetDirection::RX, payload[1], &style) }
-								tx = payload[0]; rx = payload[1];
+							}
+						},
+						PacketId::ScreenDrawPacket => {
+							if let Some(payload) = pkt.payload && payload.len() == 6 {
+								draw_cpu_bar(&mut display, 1, payload[0], &style);
+								draw_cpu_bar(&mut display, 2, payload[1], &style);
+								draw_cpu_bar(&mut display, 3, payload[2], &style);
+								draw_cpu_bar(&mut display, 4, payload[3], &style);
+								draw_network_bar(&mut display, NetDirection::TX, payload[4], &style);
+								draw_network_bar(&mut display, NetDirection::RX, payload[5], &style);
 								display.flush().unwrap();
 							}
 						},
@@ -151,9 +147,9 @@ fn main() -> ! {
 }
 
 fn byte_to_height(val: u8, max: u8) -> u32 {
-	// let t = (val >> 2) as u32; // TODO this is a cheap ass solution with awful precision!!!
-	// return if t > max as u32 { max as u32 } else { t };
-	return ((val as f32 / 255.0) * max as f32) as u32; // TODO get rid of floating point operations!
+	let t = (val >> 2) as u32; // TODO this is a cheap ass solution with awful precision!!!
+	return if t > max as u32 { max as u32 } else { t };
+	// return ((val as f32 / 255.0) * max as f32) as u32; // TODO get rid of floating point operations!
 }
 
 fn draw_ui(display: &mut Display, style: &DisplayStyle) {
@@ -168,7 +164,6 @@ fn draw_ui(display: &mut Display, style: &DisplayStyle) {
 	Text::new("CPU4", Point::new(62, 6), style.text_style).draw(display).unwrap();
 	Text::new("TX", Point::new(104, 6), style.text_style).draw(display).unwrap();
 	Text::new("RX", Point::new(116, 6), style.text_style).draw(display).unwrap();
-
 }
 
 fn draw_cpu_bar(display: &mut Display, index: u8, value: u8, style: &DisplayStyle) {

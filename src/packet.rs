@@ -6,6 +6,7 @@ pub enum PacketId {
 	Reset = 0x00,
 	SetLedsPacket = 0x01,
 	NetStatePacket = 0x02,
+	ScreenDrawPacket = 0x03,
 }
 
 impl From<u8> for PacketId {
@@ -14,6 +15,7 @@ impl From<u8> for PacketId {
 			0 => PacketId::Reset,
 			1 => PacketId::SetLedsPacket,
 			2 => PacketId::NetStatePacket,
+			3 => PacketId::ScreenDrawPacket,
 			_ => PacketId::Invalid,
 		}
 	}
@@ -55,7 +57,8 @@ impl PacketBuilder {
 			PacketBuilderStep::ID => {
 				let id = PacketId::from(byte);
 				match id {
-					PacketId::SetLedsPacket | PacketId::Reset | PacketId::NetStatePacket => {
+					PacketId::SetLedsPacket | PacketId::Reset
+					| PacketId::NetStatePacket | PacketId::ScreenDrawPacket => {
 						self.id = id;
 						self.step = PacketBuilderStep::SIZE;
 					},
