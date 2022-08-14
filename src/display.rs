@@ -1,6 +1,6 @@
 use embedded_graphics::{
 	prelude::*,
-	text::Text, primitives::Rectangle,
+	text::Text, primitives::Rectangle, mono_font::{MonoTextStyle, MonoTextStyleBuilder, ascii::FONT_4X6}, pixelcolor::BinaryColor,
 };
 
 use arduino_hal::I2c;
@@ -10,6 +10,27 @@ use crate::DisplayStyle;
 
 type Display = Ssd1306<I2CInterface<I2c>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>;
 
+pub struct Spinner {
+	flip: bool,
+	x: i32,
+	y: i32,
+	style: MonoTextStyle<'static, BinaryColor>,
+}
+
+impl Spinner {
+	pub fn new(x: i32, y: i32) -> Self {
+		let style = MonoTextStyleBuilder::new().font(&FONT_4X6).text_color(BinaryColor::On).background_color(BinaryColor::Off).build();
+		Spinner { flip: true, x, y, style }
+	}
+
+	pub fn draw(&mut self, display: &mut Display) {
+		Text::new(if self.flip { "-" } else { "|" }, Point::new(self.x, self.y), self.style)
+			.draw(display)
+			.unwrap();
+		self.flip = !self.flip;
+	}
+}
+
 fn byte_to_height(val: u8, max: u8) -> u32 {
 	let t = (val >> 2) as u32; // TODO this is a cheap ass solution with awful precision!!!
 	return if t > max as u32 { max as u32 } else { t };
@@ -17,21 +38,40 @@ fn byte_to_height(val: u8, max: u8) -> u32 {
 }
 
 pub fn draw_ui(display: &mut Display, style: &DisplayStyle) {
-	Rectangle::new(Point::new(0, 0), Size::new(128, 64))
+	Rectangle::new(Point::new(0, 0), Size::new(85, 64))
 		.into_styled(style.border_style)
 		.draw(display)
 		.unwrap();
 
-	Text::new("CPU1", Point::new(2, 6), style.text_style).draw(display).unwrap();
-	Text::new("CPU2", Point::new(22, 6), style.text_style).draw(display).unwrap();
-	Text::new("CPU3", Point::new(42, 6), style.text_style).draw(display).unwrap();
-	Text::new("CPU4", Point::new(62, 6), style.text_style).draw(display).unwrap();
+	Rectangle::new(Point::new(87, 0), Size::new(11, 16))
+		.into_styled(style.border_style)
+		.draw(display)
+		.unwrap();
+
+	// since my specific display is 2 displays of different colors joined, there's a small gap
+	// between pixels 19 and 20. This makes the 2 extra blank pixels look bad, so I'm removing 3.
+	// On normal screens this will look worse and you should put them back.
+	// Rectangle::new(Point::new(87, 16), Size::new(11, 48))
+	// 	.into_styled(style.border_style)
+	// 	.draw(display)
+	// 	.unwrap();
+
+	Rectangle::new(Point::new(100, 0), Size::new(28, 64))
+		.into_styled(style.border_style)
+		.draw(display)
+		.unwrap();
+
+
+	Text::new("CPU1", Point::new(5, 6), style.text_style).draw(display).unwrap();
+	Text::new("CPU2", Point::new(25, 6), style.text_style).draw(display).unwrap();
+	Text::new("CPU3", Point::new(45, 6), style.text_style).draw(display).unwrap();
+	Text::new("CPU4", Point::new(65, 6), style.text_style).draw(display).unwrap();
 	Text::new("TX", Point::new(104, 6), style.text_style).draw(display).unwrap();
 	Text::new("RX", Point::new(116, 6), style.text_style).draw(display).unwrap();
 }
 
 pub fn draw_cpu_bar(display: &mut Display, index: u8, value: u8, style: &DisplayStyle) {
-	let x = 2 + ((index - 1) * 20);
+	let x = 5 + ((index - 1) * 20);
 	let height = byte_to_height(value, 54);
 	Rectangle::new(Point::new(x as i32, 8), Size::new(15, 54 - (height-1) as u32))
 		.into_styled(style.background_style)
@@ -48,7 +88,7 @@ pub enum NetDirection {
 }
 
 pub fn draw_network_bar(display: &mut Display, direction: NetDirection, value: u8, style: &DisplayStyle) {
-	let x = match direction { NetDirection::TX => 104, NetDirection::RX => 116 };
+	let x = match direction { NetDirection::TX => 103, NetDirection::RX => 115 };
 	let height = byte_to_height(value, 54);
 	Rectangle::new(Point::new(x as i32, 8), Size::new(10, 54 - (height-1) as u32))
 		.into_styled(style.background_style)
