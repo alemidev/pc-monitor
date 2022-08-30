@@ -20,7 +20,7 @@ mod display;
 
 use crate::packet::PacketBuilder;
 use crate::utils::FourLedDisplay;
-use display::{draw_ui, draw_cpu_bar, draw_network_bar, NetDirection};
+use display::{draw_ui, draw_cpu_bar, draw_network_bar, NetDirection, Spinner};
 
 pub struct DisplayStyle<'a> {
 	border_style: PrimitiveStyle<BinaryColor>,
@@ -41,10 +41,10 @@ fn main() -> ! {
 	let mut led_tx = pins.d4.into_output(); // red
 	let button = pins.d2.into_pull_up_input();
 	let mut cpu_leds = FourLedDisplay::new(
-		pins.d3.into_output().into_pwm(&timer2),
-		pins.d9.into_output().into_pwm(&timer1),
-		pins.d10.into_output().into_pwm(&timer1),
 		pins.d11.into_output().into_pwm(&timer2),
+		pins.d10.into_output().into_pwm(&timer1),
+		pins.d9.into_output().into_pwm(&timer1),
+		pins.d3.into_output().into_pwm(&timer2),
 	);
 	let i2c = arduino_hal::i2c::I2c::new(
 		dp.TWI, pins.a4.into_pull_up_input(), pins.a5.into_pull_up_input(), 800000
@@ -75,6 +75,7 @@ fn main() -> ! {
 	// prepare display
 	let interface = I2CDisplayInterface::new(i2c);
 	let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0).into_buffered_graphics_mode();
+	let mut s = Spinner::new(91, 10);
 
 	display.init().unwrap();
 	cpu_leds.set(1, 255);
@@ -124,13 +125,14 @@ fn main() -> ! {
 							}
 						},
 						PacketId::ScreenDrawPacket => {
-							if let Some(payload) = pkt.payload && payload.len() == 6 {
+							if let Some(payload) = pkt.payload && payload.len() == 8 {
+								s.draw(&mut display);
 								draw_cpu_bar(&mut display, 1, payload[0], &style);
 								draw_cpu_bar(&mut display, 2, payload[1], &style);
 								draw_cpu_bar(&mut display, 3, payload[2], &style);
 								draw_cpu_bar(&mut display, 4, payload[3], &style);
-								draw_network_bar(&mut display, NetDirection::TX, payload[4], &style);
-								draw_network_bar(&mut display, NetDirection::RX, payload[5], &style);
+								draw_network_bar(&mut display, NetDirection::TX, payload[4], payload[6], &style);
+								draw_network_bar(&mut display, NetDirection::RX, payload[5], payload[7], &style);
 								display.flush().unwrap();
 							}
 						},

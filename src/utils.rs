@@ -2,18 +2,18 @@ use arduino_hal::{simple_pwm::*, port::{Pin, mode::PwmOutput}, hal::port::{PD3, 
 
 // TODO can I make it a generic "Pin" and use a slice?
 pub struct FourLedDisplay {
-	led1: Pin<PwmOutput<Timer2Pwm>, PD3>,
-	led2: Pin<PwmOutput<Timer1Pwm>, PB1>,
-	led3: Pin<PwmOutput<Timer1Pwm>, PB2>,
-	led4: Pin<PwmOutput<Timer2Pwm>, PB3>,
+	led1: Pin<PwmOutput<Timer2Pwm>, PB3>,
+	led2: Pin<PwmOutput<Timer1Pwm>, PB2>,
+	led3: Pin<PwmOutput<Timer1Pwm>, PB1>,
+	led4: Pin<PwmOutput<Timer2Pwm>, PD3>,
 }
 
 impl FourLedDisplay {
 	pub fn new(
-		mut led1: Pin<PwmOutput<Timer2Pwm>, PD3>,
-		mut led2: Pin<PwmOutput<Timer1Pwm>, PB1>,
-		mut led3: Pin<PwmOutput<Timer1Pwm>, PB2>,
-		mut led4: Pin<PwmOutput<Timer2Pwm>, PB3>,
+		mut led1: Pin<PwmOutput<Timer2Pwm>, PB3>,
+		mut led2: Pin<PwmOutput<Timer1Pwm>, PB2>,
+		mut led3: Pin<PwmOutput<Timer1Pwm>, PB1>,
+		mut led4: Pin<PwmOutput<Timer2Pwm>, PD3>,
 	) -> Self {
 		led1.enable();
 		led2.enable();
