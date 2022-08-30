@@ -59,7 +59,7 @@ class State:
 			w_rx = min(int((d_rx - rx) / 4096), 255)
 			w_tx = min(int((d_tx - tx) / 4096), 255)
 			await self.packets.put(struct.pack("BBBBBB", 1, 4, *( int(((x/100) **2) * BAR_MAX_HEIGHT) for x in cpu_report )))
-			await self.packets.put(struct.pack("BBBB", 2, 2, min(int((d_tx - tx) / 1024), BAR_MAX_HEIGHT), min(int((d_rx - rx) / 1024), 255)))
+			await self.packets.put(struct.pack("BBBB", 2, 2, min(p_tx, 255), min(p_rx, 255)))
 			await self.packets.put(struct.pack("BBBBBBBBBB", 3, 8, *( int((x/100) * BAR_MAX_HEIGHT) for x in cpu_report ), p_tx, p_rx, w_tx, w_rx))
 			rx = d_rx
 			tx = d_tx
